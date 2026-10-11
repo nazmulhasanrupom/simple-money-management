@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Money Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F6F3;--surface:#FFFFFF;--ink:#18201C;--muted:#5F6A64;--line:#DCE2DD;
+  --accent:#1F5C45;--accent-ink:#FFFFFF;--danger:#A8402E;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111513;--surface:#191E1B;--ink:#E7ECE9;--muted:#9AA69F;--line:#2B332F;
+    --accent:#7CC5A1;--accent-ink:#0F1A15;--danger:#E07A66;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111513;--surface:#191E1B;--ink:#E7ECE9;--muted:#9AA69F;--line:#2B332F;
+  --accent:#7CC5A1;--accent-ink:#0F1A15;--danger:#E07A66;color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
+}
+main{max-width:880px;margin:0 auto;padding:28px 16px 56px}
+
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+h1{font-size:clamp(2.1rem,7vw,2.9rem);line-height:1.02;margin:0;font-weight:700;letter-spacing:-0.025em}
+.sub{margin:8px 0 0;color:var(--muted)}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:.9rem;padding:8px 16px;border-radius:999px;cursor:pointer;min-height:38px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+section{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
+h2{font-size:1.15rem;margin:0 0 14px;font-weight:600}
+
+.inputs{display:grid;grid-template-columns:1fr 1.4fr;gap:12px}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:6px}
+input[type=month],input[type=text],select{
+  width:100%;font:inherit;font-size:1.05rem;color:var(--ink);background:var(--paper);
+  border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:48px;
+}
+.money{position:relative}
+.money span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.money input{padding-left:40px;font-variant-numeric:tabular-nums;font-weight:600}
+
+.split{display:grid;grid-template-columns:210px 1fr;gap:28px;align-items:center;margin-top:22px}
+.donut{width:100%;max-width:210px;margin:0 auto;display:block}
+.donut .big{fill:var(--ink);font-weight:700;font-size:14px}
+.donut .small{fill:var(--muted);font-size:10px}
+
+ul.list{list-style:none;margin:0;padding:0}
+ul.list li{display:grid;grid-template-columns:12px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+ul.list li:last-child{border-bottom:0}
+ul.list li .nm{overflow-wrap:anywhere}
+.dot{width:10px;height:10px;border-radius:3px;flex:none}
+.pct{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums;min-width:3.2ch;text-align:right}
+.amt{font-weight:600;font-variant-numeric:tabular-nums;text-align:right;min-width:9ch}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn{font:inherit;font-weight:600;border-radius:10px;padding:10px 18px;min-height:44px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.seg button:focus-visible,.del:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:.9rem;color:var(--muted);min-height:1.5em;margin:10px 0 0}
+
+/* Plan editor */
+details summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;border-radius:8px}
+details summary::-webkit-details-marker{display:none}
+details summary h2{margin:0}
+details summary::after{content:"+";font-size:1.5rem;line-height:1;color:var(--muted);width:24px;text-align:center}
+details[open] summary::after{content:"\2212"}
+details[open] summary{margin-bottom:6px}
+.hint{color:var(--muted);font-size:.9rem;margin:0 0 6px}
+.row{display:grid;grid-template-columns:12px minmax(0,1fr) 92px 92px auto;grid-template-areas:"dot name p1 p2 rm";gap:8px 10px;align-items:end;padding:12px 0;border-bottom:1px solid var(--line)}
+.row .dot{grid-area:dot;align-self:end;margin-bottom:19px}
+.row .rname{grid-area:name}
+.row .p1{grid-area:p1}
+.row .p2{grid-area:p2}
+.row .del{grid-area:rm;min-height:48px;padding:0 6px}
+.pf{margin:0;font-size:.78rem}
+.pf span{display:block;margin-bottom:4px}
+.pin{position:relative}
+.pin i{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--muted);pointer-events:none}
+.pin input[type=text]{padding-right:28px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.totals{margin:14px 0 0;display:grid;gap:2px;font-variant-numeric:tabular-nums;font-size:.95rem}
+.totals p{margin:0}
+.fundpick{margin-top:16px;max-width:360px}
+
+.bar{height:14px;border-radius:999px;background:var(--paper);border:1px solid var(--line);overflow:hidden}
+.bar>div{height:100%;background:var(--accent);width:0;transition:width .5s ease}
+.fund-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;font-variant-numeric:tabular-nums}
+.fund-row strong{font-weight:600}
+.target{display:flex;align-items:center;gap:12px;margin-top:16px}
+.target label{margin:0;white-space:nowrap}
+.target .money{flex:1;max-width:240px}
+.note{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--paper);border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+
+.chart{width:100%;display:block}
+.chart text{fill:var(--muted);font-size:11px;font-family:inherit}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.82rem;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.empty{color:var(--muted);margin:0}
+
+.table-wrap{overflow-x:auto;margin-top:18px;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
+th{color:var(--muted);font-weight:500;font-size:.8rem}
+.del{border:0;background:none;color:var(--danger);font:inherit;font-size:.85rem;cursor:pointer;padding:6px 4px}
+
+.foot{color:var(--muted);font-size:.85rem;margin:18px 4px 0}
+
+@media (max-width:640px){
+  main{padding-top:20px}
+  .inputs{grid-template-columns:1fr}
+  .split{grid-template-columns:1fr;gap:18px}
+  .donut{max-width:190px}
+  section{padding:16px}
+  .row{grid-template-columns:12px minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"dot name name name" ". p1 p2 rm"}
+}
+@media (prefers-reduced-motion:reduce){.bar>div{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Money plan</h1>
+      <p class="sub">Enter what you earned. See where each taka goes.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Plan stage">
+      <button type="button" data-stage="1">Stage 1</button>
+      <button type="button" data-stage="2">Stage 2</button>
+    </div>
+  </header>
+
+  <section aria-labelledby="t-month">
+    <h2 id="t-month">This month</h2>
+    <div class="inputs">
+      <div>
+        <label for="month">Month</label>
+        <input type="month" id="month">
+      </div>
+      <div>
+        <label for="income">Income</label>
+        <div class="money"><span>Tk</span><input type="text" id="income" inputmode="numeric" autocomplete="off" placeholder="1,00,000"></div>
+      </div>
+    </div>
+    <div class="split">
+      <svg class="donut" id="donut" viewBox="0 0 160 160" role="img" aria-label="How this month's income is split"></svg>
+      <ul class="list" id="list"></ul>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="saveBtn" type="button">Save month</button>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </section>
+
+  <section>
+    <details id="planBox">
+      <summary><h2 id="t-plan">Edit plan</h2></summary>
+      <p class="hint">Change a percentage, add a cost, or remove one. Each stage must add up to 100%. Months you already saved keep their old amounts.</p>
+      <div id="rows"></div>
+      <div class="totals" role="status" aria-live="polite">
+        <p id="tot1"></p>
+        <p id="tot2"></p>
+      </div>
+      <div class="fundpick">
+        <label for="fundSel">Count this cost toward the emergency fund</label>
+        <select id="fundSel"></select>
+      </div>
+      <div class="actions">
+        <button class="btn" id="addBtn" type="button">Add cost</button>
+        <button class="btn primary" id="planSave" type="button">Save plan</button>
+        <button class="btn" id="planUndo" type="button">Undo changes</button>
+      </div>
+      <p class="status" id="planStatus" role="status"></p>
+    </details>
+  </section>
+
+  <section aria-labelledby="t-fund" id="fundSec">
+    <h2 id="t-fund">Emergency fund</h2>
+    <p class="sub" id="fundName" style="margin:-6px 0 12px"></p>
+    <div class="bar" role="progressbar" aria-label="Emergency fund progress" aria-valuemin="0" aria-valuemax="100" id="fundBarWrap"><div id="fundBar"></div></div>
+    <div class="fund-row">
+      <span><strong id="fundSaved">Tk 0</strong> saved</span>
+      <span id="fundPct">0% of goal</span>
+    </div>
+    <div class="target">
+      <label for="target">Goal</label>
+      <div class="money"><span>Tk</span><input type="text" id="target" inputmode="numeric" autocomplete="off"></div>
+    </div>
+    <div class="note" id="fundNote" hidden>
+      <span>Your fund is full. You can switch to Stage 2.</span>
+      <button class="btn primary" id="toStage2" type="button">Switch to Stage 2</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-hist">
+    <h2 id="t-hist">History</h2>
+    <div id="histBox">
+      <svg class="chart" id="hist" role="img" aria-label="Income by month, split by category"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+    <p class="empty" id="histEmpty">No months saved yet. Save your first month above.</p>
+    <div class="table-wrap" id="tableWrap"><table id="table"></table></div>
+    <div class="actions">
+      <button class="btn" id="csvBtn" type="button">Download CSV</button>
+      <button class="btn" id="importBtn" type="button">Import CSV</button>
+      <input type="file" id="file" accept=".csv,text/csv" hidden>
+    </div>
+    <p class="status" id="histStatus" role="status"></p>
+  </section>
+
+  <p class="foot">Records and your plan stay in this browser only. Download a CSV from time to time as a backup. Use Import CSV to move records to another phone or computer.</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- Starting plan: p = [Stage 1 %, Stage 2 %] ----
+  const DEFAULT_CATS = [
+    { id: 'father',   name: 'Father',          p: [8, 8],   color: '#3E6FA8' },
+    { id: 'mother',   name: 'Mother',          p: [8, 8],   color: '#7B5EA7' },
+    { id: 'wife',     name: 'Wife',            p: [10, 10], color: '#C2577B' },
+    { id: 'child',    name: 'Child',           p: [7, 7],   color: '#E0913A' },
+    { id: 'donation', name: 'Donation',        p: [15, 15], color: '#1E9488' },
+    { id: 'tools',    name: 'AI Tools & Work', p: [5, 5],   color: '#9A9A3A' },
+    { id: 'savings',  name: 'Savings',         p: [30, 15], color: '#3F8A4A' },
+    { id: 'business', name: 'Business',        p: [10, 25], color: '#B9553B' },
+    { id: 'rent',     name: 'Rent & Food',     p: [7, 7],   color: '#77838C' }
+  ];
+  const PALETTE = ['#3E6FA8', '#7B5EA7', '#C2577B', '#E0913A', '#1E9488', '#9A9A3A', '#3F8A4A', '#B9553B',
+                   '#77838C', '#2F7FA0', '#8C5A3C', '#B04A9B', '#6B7F2A', '#C46A2D', '#4B5FA8', '#A8402E'];
+  const STORE = 'moneyplan.v1';
+  const DEFAULT_TARGET = 270000;
+  const MAX_COSTS = 20;
+
+  const nf = new Intl.NumberFormat('en-IN');
+  const tk = n => 'Tk ' + nf.format(Math.round(n || 0));
+  const digits = s => { const v = parseInt(String(s).replace(/[^\d]/g, ''), 10); return isNaN(v) ? 0 : v; };
+  const num = s => { const v = Math.round(parseFloat(String(s).replace(/,/g, ''))); return isFinite(v) && v > 0 ? v : 0; };
+  const fmtPct = n => String(+Number(n || 0).toFixed(2));
+  const round2 = n => Math.round(n * 100) / 100;
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const $ = id => document.getElementById(id);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  // ---- Storage ----
+  function cloneCats(a) { return a.map(c => ({ id: c.id, name: c.name, p: [c.p[0], c.p[1]], color: c.color })); }
+
+  function load() {
+    const base = { stage: 1, target: DEFAULT_TARGET, fundKey: 'savings', cats: cloneCats(DEFAULT_CATS), names: {}, records: [] };
+    try {
+      const s = JSON.parse(localStorage.getItem(STORE));
+      if (s && Array.isArray(s.records)) {
+        base.stage = s.stage === 2 ? 2 : 1;
+        base.target = s.target > 0 ? s.target : DEFAULT_TARGET;
+        base.records = s.records.filter(r => r && /^\d{4}-\d{2}$/.test(r.month) && r.split && typeof r.split === 'object');
+        if (Array.isArray(s.cats)) {
+          const ok = s.cats.filter(c => c && typeof c.id === 'string' && typeof c.name === 'string' &&
+            Array.isArray(c.p) && isFinite(c.p[0]) && isFinite(c.p[1]));
+          if (ok.length) base.cats = ok.map(c => ({ id: c.id, name: c.name, p: [+c.p[0], +c.p[1]], color: c.color || PALETTE[0] }));
+          base.fundKey = typeof s.fundKey === 'string' ? s.fundKey : '';
+        }
+        if (s.names && typeof s.names === 'object') base.names = s.names;
+      }
+    } catch (e) {}
+    if (!base.cats.some(c => c.id === base.fundKey)) base.fundKey = '';
+    DEFAULT_CATS.forEach(c => { if (!base.names[c.id]) base.names[c.id] = { name: c.name, color: c.color }; });
+    base.cats.forEach(c => { base.names[c.id] = { name: c.name, color: c.color }; });
+    return base;
+  }
+  function persist() {
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+  }
+  let state = load();
+  let draft = null;
+
+  // ---- Helpers ----
+  function meta(id) { return state.names[id] || { name: id, color: '#77838C' }; }
+
+  function split(income, stage, cats) {
+    const out = {}; let used = 0;
+    cats.forEach(c => {
+      const pp = Math.round((c.p[stage - 1] || 0) * 100);
+      const v = Math.floor(income * pp / 10000);
+      if (v > 0) out[c.id] = v;
+      used += v;
+    });
+    const rest = income - used;
+    const live = cats.filter(c => (c.p[stage - 1] || 0) > 0);
+    if (rest > 0 && live.length) {
+      let t = live.find(c => c.id === state.fundKey);
+      if (!t) t = live.reduce((a, b) => (b.p[stage - 1] > a.p[stage - 1] ? b : a));
+      out[t.id] = (out[t.id] || 0) + rest; // rounding leftover
+    }
+    return out;
+  }
+  function monthLabel(ym, short) {
+    const [y, m] = ym.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    return short
+      ? d.toLocaleDateString('en-GB', { month: 'short' }) + ' ' + String(y).slice(2)
+      : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+  function shortMoney(n) {
+    if (n >= 100000) return +(n / 100000).toFixed(1) + 'L';
+    if (n >= 1000) return Math.round(n / 1000) + 'k';
+    return String(n);
+  }
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function sorted() { return state.records.slice().sort((a, b) => a.month.localeCompare(b.month)); }
+  function findRecord(m) { return state.records.find(r => r.month === m); }
+
+  // Category ids that appear in the given records: current plan order first, removed costs after
+  function idsFor(recs) {
+    const seen = new Set();
+    recs.forEach(r => Object.keys(r.split).forEach(k => { if ((r.split[k] || 0) > 0) seen.add(k); }));
+    const order = state.cats.map(c => c.id).filter(id => seen.has(id));
+    seen.forEach(id => { if (order.indexOf(id) < 0) order.push(id); });
+    return order;
+  }
+
+  // ---- Elements ----
+  const monthEl = $('month'), incomeEl = $('income'), targetEl = $('target');
+  const now = new Date();
+  monthEl.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+  // ---- Stage ----
+  function renderStage() {
+    document.querySelectorAll('.seg button').forEach(b => {
+      b.setAttribute('aria-pressed', String(Number(b.dataset.stage) === state.stage));
+    });
+  }
+  document.querySelectorAll('.seg button').forEach(b => {
+    b.addEventListener('click', () => { state.stage = Number(b.dataset.stage); persist(); renderAll(); });
+  });
+
+  // ---- This month ----
+  function renderSplit() {
+    const inc = digits(incomeEl.value), st = state.stage;
+    const s = split(inc, st, state.cats);
+    const live = state.cats.filter(c => c.p[st - 1] > 0);
+
+    const list = $('list'); list.innerHTML = '';
+    live.forEach(c => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="dot" style="background:' + c.color + '"></span>' +
+        '<span class="nm">' + esc(c.name) + '</span>' +
+        '<span class="pct">' + fmtPct(c.p[st - 1]) + '%</span>' +
+        '<span class="amt">' + tk(s[c.id]) + '</span>';
+      list.appendChild(li);
+    });
+
+    const svg = $('donut'); svg.innerHTML = '';
+    const r = 62, C = 2 * Math.PI * r;
+    el('circle', { cx: 80, cy: 80, r: r, fill: 'none', stroke: 'var(--line)', 'stroke-width': 20 }, svg);
+    if (inc > 0) {
+      const g = el('g', { transform: 'rotate(-90 80 80)' }, svg);
+      let acc = 0;
+      live.forEach(c => {
+        const v = s[c.id] || 0;
+        const len = C * v / inc;
+        const draw = Math.max(len - 1.2, 0);
+        const seg = el('circle', {
+          cx: 80, cy: 80, r: r, fill: 'none', stroke: c.color, 'stroke-width': 20,
+          'stroke-dasharray': draw + ' ' + (C - draw), 'stroke-dashoffset': -acc
+        }, g);
+        el('title', {}, seg).textContent = c.name + ': ' + tk(v);
+        acc += len;
+      });
+    }
+    el('text', { x: 80, y: 80, 'text-anchor': 'middle', class: 'big' }, svg).textContent = inc > 0 ? tk(inc) : 'Tk 0';
+    el('text', { x: 80, y: 97, 'text-anchor': 'middle', class: 'small' }, svg).textContent = 'Stage ' + st;
+
+    $('saveBtn').textContent = findRecord(monthEl.value) ? 'Update month' : 'Save month';
+  }
+
+  incomeEl.addEventListener('input', () => {
+    const v = digits(incomeEl.value);
+    incomeEl.value = v ? nf.format(v) : '';
+    $('status').textContent = '';
+    renderSplit();
+  });
+
+  monthEl.addEventListener('change', () => {
+    const rec = findRecord(monthEl.value);
+    if (rec) {
+      incomeEl.value = nf.format(rec.income);
+      $('status').textContent = monthLabel(rec.month) + ' is already saved. Press Update to save it again with your current plan.';
+    } else {
+      $('status').textContent = '';
+    }
+    renderSplit();
+  });
+
+  $('saveBtn').addEventListener('click', () => {
+    const m = monthEl.value, inc = digits(incomeEl.value);
+    if (!/^\d{4}-\d{2}$/.test(m)) { $('status').textContent = 'Pick a month first.'; return; }
+    if (inc <= 0) { $('status').textContent = 'Enter an income above 0.'; return; }
+    const rec = { month: m, income: inc, stage: state.stage, split: split(inc, state.stage, state.cats) };
+    const i = state.records.findIndex(r => r.month === m);
+    if (i >= 0) state.records[i] = rec; else state.records.push(rec);
+    persist();
+    $('status').textContent = (i >= 0 ? 'Updated ' : 'Saved ') + monthLabel(m) + '.';
+    renderAll();
+  });
+
+  // ---- Plan editor ----
+  function newDraft() { draft = { cats: cloneCats(state.cats), fundKey: state.fundKey }; }
+
+  function uid() {
+    let id;
+    do { id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+    while (state.names[id] || draft.cats.some(c => c.id === id));
+    return id;
+  }
+  function pickColor() {
+    const used = new Set(draft.cats.map(c => c.color));
+    Object.keys(state.names).forEach(k => used.add(state.names[k].color));
+    return PALETTE.find(c => !used.has(c)) || PALETTE[draft.cats.length % PALETTE.length];
+  }
+  function parsePct(str) {
+    const v = parseFloat(String(str).replace(',', '.'));
+    return isFinite(v) && v >= 0 ? Math.min(v, 100) : 0;
+  }
+
+  function pfield(c, i) {
+    const lab = document.createElement('label');
+    lab.className = 'pf ' + (i ? 'p2' : 'p1');
+    const sp = document.createElement('span');
+    sp.textContent = 'Stage ' + (i + 1);
+    const wrap = document.createElement('div');
+    wrap.className = 'pin';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.inputMode = 'decimal'; inp.autocomplete = 'off';
+    inp.value = fmtPct(c.p[i]);
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', () => {
+      const clean = inp.value.replace(',', '.').replace(/[^\d.]/g, '');
+      if (clean !== inp.value) inp.value = clean;
+      c.p[i] = parsePct(clean);
+      refreshPlan(false);
+    });
+    const pc = document.createElement('i');
+    pc.textContent = '%';
+    wrap.append(inp, pc);
+    lab.append(sp, wrap);
+    return lab;
+  }
+
+  function buildRows() {
+    const box = $('rows'); box.innerHTML = '';
+    draft.cats.forEach((c, idx) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.setAttribute('role', 'group');
+      row.setAttribute('aria-label', c.name || 'New cost');
+
+      const dot = document.createElement('span');
+      dot.className = 'dot'; dot.style.background = c.color;
+
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'del'; rm.textContent = 'Remove';
+      rm.setAttribute('aria-label', 'Remove ' + (c.name || 'this cost'));
+      rm.disabled = draft.cats.length <= 1;
+      rm.addEventListener('click', () => {
+        draft.cats.splice(idx, 1);
+        if (draft.fundKey === c.id) draft.fundKey = '';
+        buildRows(); refreshPlan(true);
+        $('addBtn').focus();
+      });
+
+      const name = document.createElement('input');
+      name.type = 'text'; name.className = 'rname'; name.maxLength = 40;
+      name.value = c.name; name.placeholder = 'Name, for example University';
+      name.setAttribute('aria-label', 'Cost name');
+      name.addEventListener('input', () => {
+        c.name = name.value;
+        row.setAttribute('aria-label', c.name || 'New cost');
+        rm.setAttribute('aria-label', 'Remove ' + (c.name || 'this cost'));
+        refreshPlan(true);
+      });
+
+      row.append(dot, name, pfield(c, 0), pfield(c, 1), rm);
+      box.appendChild(row);
+    });
+  }
+
+  function planTotals() { return [0, 1].map(i => draft.cats.reduce((a, c) => a + Math.round(c.p[i] * 100), 0)); }
+
+  function problem() {
+    if (!draft.cats.length) return 'Add at least one cost.';
+    if (draft.cats.some(c => !c.name.trim())) return 'Give every cost a name.';
+    const seen = new Set();
+    for (const c of draft.cats) {
+      const k = c.name.trim().toLowerCase();
+      if (seen.has(k)) return 'Each cost needs its own name. "' + c.name.trim() + '" is used twice.';
+      seen.add(k);
+    }
+    const t = planTotals();
+    if (t[0] !== 10000 || t[1] !== 10000) return 'Make both stages add up to 100%.';
+    return '';
+  }
+
+  function updateFundSelect() {
+    const sel = $('fundSel'); sel.innerHTML = '';
+    const none = document.createElement('option');
+    none.value = ''; none.textContent = 'None (hide the emergency fund)';
+    sel.appendChild(none);
+    draft.cats.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = c.name.trim() || '(no name yet)';
+      sel.appendChild(o);
+    });
+    sel.value = draft.cats.some(c => c.id === draft.fundKey) ? draft.fundKey : '';
+  }
+
+  function refreshPlan(namesChanged) {
+    const t = planTotals();
+    [0, 1].forEach(i => {
+      const v = t[i], diff = Math.abs(10000 - v) / 100;
+      let msg = 'Stage ' + (i + 1) + ': ' + fmtPct(v / 100) + '%. ';
+      if (v === 10000) msg += 'Good.';
+      else if (v < 10000) msg += 'Add ' + fmtPct(diff) + '% more.';
+      else msg += 'Remove ' + fmtPct(diff) + '%.';
+      $('tot' + (i + 1)).textContent = msg;
+    });
+    if (namesChanged) updateFundSelect();
+    const prob = problem();
+    $('planSave').disabled = !!prob;
+    $('addBtn').disabled = draft.cats.length >= MAX_COSTS;
+    $('planStatus').textContent = prob || (draft.cats.length >= MAX_COSTS ? 'You can have up to ' + MAX_COSTS + ' costs.' : '');
+  }
+
+  $('fundSel').addEventListener('change', e => { draft.fundKey = e.target.value; });
+
+  $('addBtn').addEventListener('click', () => {
+    if (draft.cats.length >= MAX_COSTS) return;
+    draft.cats.push({ id: uid(), name: '', p: [0, 0], color: pickColor() });
+    buildRows(); refreshPlan(true);
+    const ins = $('rows').querySelectorAll('.rname');
+    ins[ins.length - 1].focus();
+  });
+
+  $('planUndo').addEventListener('click', () => {
+    newDraft(); buildRows(); refreshPlan(true);
+    $('planStatus').textContent = 'Changes undone.';
+  });
+
+  $('planSave').addEventListener('click', () => {
+    if (problem()) return;
+    state.cats = draft.cats.map(c => ({ id: c.id, name: c.name.trim(), p: [round2(c.p[0]), round2(c.p[1])], color: c.color }));
+    state.fundKey = state.cats.some(c => c.id === draft.fundKey) ? draft.fundKey : '';
+    state.cats.forEach(c => { state.names[c.id] = { name: c.name, color: c.color }; });
+    persist();
+    newDraft(); buildRows(); refreshPlan(true);
+    renderAll();
+    $('planStatus').textContent = 'Plan saved. New months use it. Saved months keep their old amounts.';
+  });
+
+  // ---- Emergency fund ----
+  function renderFund() {
+    const fk = state.fundKey;
+    $('fundSec').hidden = !fk;
+    if (!fk) return;
+    const saved = state.records.reduce((t, r) => t + (r.split[fk] || 0), 0);
+    const pct = state.target > 0 ? Math.min(100, saved / state.target * 100) : 0;
+    $('fundName').textContent = 'Counts what you put in ' + meta(fk).name + '.';
+    $('fundBar').style.width = pct + '%';
+    $('fundBarWrap').setAttribute('aria-valuenow', Math.round(pct));
+    $('fundSaved').textContent = tk(saved);
+    $('fundPct').textContent = Math.floor(pct) + '% of ' + tk(state.target);
+    if (document.activeElement !== targetEl) targetEl.value = nf.format(state.target);
+    $('fundNote').hidden = !(saved >= state.target && state.stage === 1);
+  }
+  targetEl.addEventListener('input', () => {
+    const v = digits(targetEl.value);
+    targetEl.value = v ? nf.format(v) : '';
+    if (v > 0) { state.target = v; persist(); renderFund(); }
+  });
+  targetEl.addEventListener('blur', renderFund);
+  $('toStage2').addEventListener('click', () => { state.stage = 2; persist(); renderAll(); });
+
+  // ---- History chart ----
+  function renderHistory() {
+    const recs = sorted().slice(-12);
+    const box = $('histBox'), empty = $('histEmpty');
+    box.hidden = recs.length === 0;
+    empty.hidden = recs.length > 0;
+    $('tableWrap').hidden = recs.length === 0;
+    if (!recs.length) return;
+
+    const ids = idsFor(recs);
+    const svg = $('hist'); svg.innerHTML = '';
+    const W = Math.max(300, box.clientWidth || 600), H = 230;
+    const padL = 40, padR = 6, padT = 10, padB = 26;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('height', H);
+
+    const maxInc = Math.max(...recs.map(r => r.income));
+    const step = Math.pow(10, Math.floor(Math.log10(maxInc)));
+    const top = Math.ceil(maxInc / step) * step;
+    const plotH = H - padT - padB, plotW = W - padL - padR;
+    const y = v => padT + plotH - (v / top) * plotH;
+
+    [0, 0.5, 1].forEach(f => {
+      const v = top * f;
+      el('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), class: 'grid' }, svg);
+      el('text', { x: padL - 6, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = shortMoney(v);
+    });
+
+    const slot = plotW / recs.length;
+    const bw = Math.min(36, slot * 0.6);
+    recs.forEach((r, i) => {
+      const x = padL + slot * i + (slot - bw) / 2;
+      let acc = 0;
+      const g = el('g', {}, svg);
+      el('title', {}, g).textContent = monthLabel(r.month) + ': ' + tk(r.income);
+      ids.forEach(id => {
+        const v = r.split[id] || 0;
+        if (v <= 0) return;
+        const y1 = y(acc + v), h = y(acc) - y1;
+        el('rect', { x: x, y: y1, width: bw, height: Math.max(h, 0), fill: meta(id).color }, g);
+        acc += v;
+      });
+      el('text', { x: x + bw / 2, y: H - 8, 'text-anchor': 'middle' }, svg).textContent = monthLabel(r.month, true);
+    });
+
+    const lg = $('legend'); lg.innerHTML = '';
+    ids.forEach(id => {
+      const s = document.createElement('span');
+      s.innerHTML = '<span class="dot" style="background:' + meta(id).color + '"></span>' + esc(meta(id).name);
+      lg.appendChild(s);
+    });
+  }
+
+  // ---- Table ----
+  function renderTable() {
+    const t = $('table');
+    const all = sorted();
+    const ids = idsFor(all);
+    let html = '<thead><tr><th>Month</th><th>Income</th><th>Stage</th>' +
+      ids.map(id => '<th>' + esc(meta(id).name) + '</th>').join('') + '<th></th></tr></thead><tbody>';
+    all.slice().reverse().forEach(r => {
+      html += '<tr><td>' + monthLabel(r.month) + '</td><td>' + nf.format(r.income) + '</td><td>' + r.stage + '</td>' +
+        ids.map(id => '<td>' + nf.format(r.split[id] || 0) + '</td>').join('') +
+        '<td><button class="del" type="button" data-month="' + r.month + '">Delete</button></td></tr>';
+    });
+    t.innerHTML = html + '</tbody>';
+    t.querySelectorAll('.del').forEach(b => b.addEventListener('click', () => {
+      const m = b.dataset.month;
+      if (!confirm('Delete the record for ' + monthLabel(m) + '?')) return;
+      state.records = state.records.filter(r => r.month !== m);
+      persist();
+      $('histStatus').textContent = 'Deleted ' + monthLabel(m) + '.';
+      renderAll();
+    }));
+  }
+
+  // ---- CSV export ----
+  const cell = v => { const s = String(v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+
+  $('csvBtn').addEventListener('click', () => {
+    const recs = sorted();
+    if (!recs.length) { $('histStatus').textContent = 'No records to download yet.'; return; }
+    const ids = idsFor(recs);
+    const head = ['Month', 'Income', 'Stage'].concat(ids.map(id => meta(id).name));
+    const rows = recs.map(r => [r.month, r.income, r.stage].concat(ids.map(id => r.split[id] || 0)));
+    const csv = [head].concat(rows).map(row => row.map(cell).join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'money-plan-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $('histStatus').textContent = 'Downloaded ' + recs.length + ' month' + (recs.length > 1 ? 's' : '') + '.';
+  });
+
+  // ---- CSV import ----
+  function parseCSV(text) {
+    const rows = []; let row = [], cur = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) {
+        if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ',') { row.push(cur); cur = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        row.push(cur); cur = ''; rows.push(row); row = [];
+      } else cur += ch;
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(r => r.some(c => c.trim() !== ''));
+  }
+
+  $('importBtn').addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseCSV(String(reader.result).replace(/^\ufeff/, ''));
+      if (rows.length < 2) { $('histStatus').textContent = 'This file has no rows to import.'; return; }
+      const head = rows[0].map(h => h.trim());
+      const low = head.map(h => h.toLowerCase());
+      const iM = low.indexOf('month'), iI = low.indexOf('income'), iS = low.indexOf('stage');
+      if (iM < 0 || iI < 0) { $('histStatus').textContent = 'This file needs Month and Income columns.'; return; }
+      const extra = head.map((h, i) => ({ h: h, i: i })).filter(x => x.i !== iM && x.i !== iI && x.i !== iS && x.h);
+      let colIds = null, count = 0;
+      const resolve = () => {
+        colIds = extra.map(x => {
+          const key = x.h.toLowerCase();
+          const inPlan = state.cats.find(c => c.name.toLowerCase() === key);
+          if (inPlan) return inPlan.id;
+          const old = Object.keys(state.names).find(id => state.names[id].name.toLowerCase() === key);
+          if (old) return old;
+          const id = 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          state.names[id] = { name: x.h, color: PALETTE[Object.keys(state.names).length % PALETTE.length] };
+          return id;
+        });
+      };
+      rows.slice(1).forEach(cols => {
+        const m = String(cols[iM] || '').trim().slice(0, 7), inc = num(cols[iI]);
+        if (!/^\d{4}-\d{2}$/.test(m) || inc <= 0) return;
+        const stage = iS >= 0 && String(cols[iS]).trim() === '2' ? 2 : 1;
+        let sp;
+        if (!extra.length) {
+          sp = split(inc, stage, state.cats);
+        } else {
+          if (!colIds) resolve();
+          sp = {};
+          extra.forEach((x, k) => { const v = num(cols[x.i]); if (v > 0) sp[colIds[k]] = (sp[colIds[k]] || 0) + v; });
+        }
+        const rec = { month: m, income: inc, stage: stage, split: sp };
+        const i = state.records.findIndex(r => r.month === m);
+        if (i >= 0) state.records[i] = rec; else state.records.push(rec);
+        count++;
+      });
+      persist();
+      $('histStatus').textContent = count ? 'Imported ' + count + ' month' + (count > 1 ? 's' : '') + '.' : 'No valid rows found in this file.';
+      e.target.value = '';
+      renderAll();
+    };
+    reader.readAsText(f);
+  });
+
+  // ---- Render ----
+  function renderAll() {
+    renderStage(); renderSplit(); renderFund(); renderHistory(); renderTable();
+  }
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderHistory, 150); });
+
+  const existing = findRecord(monthEl.value);
+  if (existing) incomeEl.value = nf.format(existing.income);
+  newDraft(); buildRows(); refreshPlan(true);
+  renderAll();
+})();
+</script>
+</body>
+</html>
